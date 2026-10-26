@@ -4,7 +4,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let button = document.getElementById("add-task-btn");
     let list = document.getElementById("todo-list");
 
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    let tasks = [];
+    try {
+        const savedTasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+        if (Array.isArray(savedTasks)) tasks = savedTasks;
+    } catch {
+        localStorage.removeItem("tasks");
+    }
 
     // Render existing tasks
     tasks.forEach((task) => renderTask(task));
@@ -29,32 +35,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Render task function
     function renderTask(task) {
-
         const li = document.createElement("li");
-        li.setAttribute("data-id", task.id);
-        li.innerHTML = `
-            <span>${task.text}</span>
-            <button>Delete</button>
-        `;
+        li.dataset.id = String(task.id);
+
+        const label = document.createElement("span");
+        label.textContent = String(task.text ?? "");
+        li.appendChild(label);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.textContent = "Delete";
+        li.appendChild(deleteButton);
+
+        li.classList.toggle("completed", Boolean(task.completed));
+        li.addEventListener("click", (event) => {
+            if (event.target.closest("button")) return;
+            task.completed = !task.completed;
+            li.classList.toggle("completed", task.completed);
+            saveTasks();
+        });
+
+        deleteButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            tasks = tasks.filter((item) => item.id !== task.id);
+            li.remove();
+            saveTasks();
+        });
+
         list.appendChild(li);
-
-        li.addEventListener('click',(e)=>{
-          if(e.target.tagname==='BUTTON') return
-          task.completed != task.completed;
-          li.classList.toggle("completed");
-          saveTasks();
-        })
-
-        li.querySelector("button").addEventListener("click",(e)=>{
-          e.stopPropagation();
-          tasks=tasks.filter(t => (t.id != task.id))
-          li.remove();
-          saveTasks();
-
-          
-        })
-
     }
+
     // Save tasks function
     function saveTasks() {
 
